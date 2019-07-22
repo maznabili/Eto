@@ -57,6 +57,10 @@ namespace Eto.iOS.Drawing
 		[DllImport("/System/Library/Frameworks/ApplicationServices.framework/Frameworks/CoreText.framework/CoreText")]
 		private static extern void CTFontDrawGlyphs(IntPtr font, IntPtr glyphs, IntPtr positions, nuint count, IntPtr context);
 
+
+		[DllImport("/System/Library/Frameworks/ApplicationServices.framework/Frameworks/CoreText.framework/CoreText")]
+		private static extern CGAffineTransform CTFontGetMatrix(IntPtr font);
+
 		[Export("showCGGlyphs:positions:count:font:matrix:attributes:inContext:")]
 		protected void ShowGlyphs(IntPtr glyphs, IntPtr positions, nuint glyphCount, IntPtr font, CGAffineTransform textMatrix, IntPtr attributes, IntPtr graphicsContext)
 		{
@@ -74,8 +78,7 @@ namespace Eto.iOS.Drawing
 				ctx.SetTextDrawingMode(CGTextDrawingMode.Clip);
 
 				// what to do with the attributes?? needed?
-				var f = Runtime.GetINativeObject<CTFont>(font, false);
-				var m = f.Matrix;
+				var m = CTFontGetMatrix(font);
 				m.Translate(textMatrix.x0, textMatrix.y0);
 				m.Scale(1, -1);
 				ctx.TextMatrix = m;

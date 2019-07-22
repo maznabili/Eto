@@ -250,6 +250,7 @@
     <Compile Include="Forms\Controls\ToggleButtonHandler.cs" />
     <Compile Include="Forms\Controls\SegmentedButtonHandler.cs" />
     <Compile Include="ColorizeView.cs" />
+    <Compile Include="Drawing\FormattedTextHandler.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
