@@ -142,8 +142,13 @@ namespace Eto.Mac.Drawing
 				return Rep.DrawAtPoint(point);
 			}
 
+			static NSDictionary s_emptyDictionary = new NSDictionary();
+
 			public override bool DrawInRect(CGRect dstSpacePortionRect, CGRect srcSpacePortionRect, NSCompositingOperation op, nfloat requestedAlpha, bool respectContextIsFlipped, NSDictionary hints)
 			{
+				// bug in Xamarin.Mac, hints can't be null when calling base..
+				hints = hints ?? s_emptyDictionary;
+
 				return Rep.DrawInRect(dstSpacePortionRect, srcSpacePortionRect, op, requestedAlpha, respectContextIsFlipped, hints);
 			}
 
@@ -155,7 +160,15 @@ namespace Eto.Mac.Drawing
 			[Export("copyWithZone:")]
 			public NSObject CopyWithZone(IntPtr zone)
 			{
-				return new LazyImageRep { rep = rep?.Copy() as NSBitmapImageRep, Load = Load };
+				var obj = new LazyImageRep {
+					rep = rep?.Copy() as NSBitmapImageRep,
+					pixelsHigh = pixelsHigh,
+					pixelsWide = pixelsWide,
+					size = size,
+					Load = Load
+				};
+				obj.DangerousRetain();
+				return obj;
 			}
 		}
 

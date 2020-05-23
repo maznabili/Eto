@@ -379,7 +379,7 @@ namespace Eto.Wpf.Forms.Controls
 			get
 			{
 				var sel = Control.Selection;
-				return Range.FromLength(sel.Start.GetTextOffset(), sel.GetLength());
+				return Eto.Forms.Range.FromLength(sel.Start.GetTextOffset(), sel.GetLength()); // Fully qualified because System.Range was introduced in .NET Core 3.0
 			}
 			set
 			{
@@ -709,7 +709,9 @@ namespace Eto.Wpf.Forms.Controls
 				{
 					swd.TextElement.SetFontFamily(elem, typeface.FontFamily);
 					// not in RTF, so should never be set but do a check anyway.
-					if (!elem.PropertyIsInheritedOrLocal(swd.TextElement.FontStretchProperty))
+					// In some cases we need to set this anyway (e.g. Arial -> Arial Narrow), so we ensure it matches the current typeface
+					if (!elem.PropertyIsInheritedOrLocal(swd.TextElement.FontStretchProperty) 
+						|| (elem.GetValue(swd.TextElement.FontStretchProperty) as sw.FontStretch?) != typeface.Stretch)
 						swd.TextElement.SetFontStretch(elem, typeface.Stretch);
 					
 					// in RTF, can be set so only set it to the typeface if not specified in RTF
@@ -830,8 +832,20 @@ namespace Eto.Wpf.Forms.Controls
 		static MemoryStream EncodeRtfFontNames(Stream stream)
 		{
 			var rtf = new StreamReader(stream).ReadToEnd();
-			var regExp = @"(?<={\\f\d+[^}]+?)&(?=[^}]+)";
-			rtf = Regex.Replace(rtf, regExp, AmpersandPlaceholder, RegexOptions.Compiled);
+			const string regFonttbl = @"(?<={\\fonttbl(\s*))(({[^}]+)}(\s*?))+(?=\s*})";
+			var fontTblMatch = Regex.Match(rtf, regFonttbl, RegexOptions.Compiled);
+			if (fontTblMatch.Success)
+			{
+				// only replace ampersands in the fonttbl section, leave everything else
+				const string regExp = @"(?<={\\f\d+[^}]+?)&(?=[^}]+)";
+				var fontTbl = Regex.Replace(fontTblMatch.Value, regExp, AmpersandPlaceholder, RegexOptions.Compiled);
+				if (fontTbl.Length != fontTblMatch.Length)
+				{
+					// found ampersand in font name, replace fonttbl string
+					rtf = rtf.Remove(fontTblMatch.Index, fontTblMatch.Length);
+					rtf = rtf.Insert(fontTblMatch.Index, fontTbl);
+				}
+			}
 
 			var ms = new MemoryStream();
 			var writer = new StreamWriter(ms, Encoding.UTF8);
@@ -1028,6 +1042,7 @@ namespace Eto.Wpf.Forms.Controls
 
 			
 			var runsAndParagraphs = GetRunsAndParagraphs(doc).ToList();
+#pragma warning disable CS0618 // 'FormattedText.FormattedText(string, CultureInfo, FlowDirection, Typeface, double, Brush)' is obsolete: 'Use the PixelsPerDip override'
 			var output = new swm.FormattedText(
 			  GetText(runsAndParagraphs),
 			  CultureInfo.CurrentCulture,
@@ -1037,6 +1052,7 @@ namespace Eto.Wpf.Forms.Controls
 			  doc.Foreground,
 			  null,
 			  swm.TextOptions.GetTextFormattingMode(doc));
+#pragma warning restore CS0618 // 'FormattedText.FormattedText(string, CultureInfo, FlowDirection, Typeface, double, Brush)' is obsolete: 'Use the PixelsPerDip override'
 
 			int offset = 0;
 

@@ -93,6 +93,14 @@ namespace Eto.Mac.Forms
 			Handler.Callback.OnWindowStateChanged(Handler.Widget, EventArgs.Empty);
 		}
 
+		public bool DisableSetOrigin { get; set; }
+
+		public override void SetFrameOrigin(CGPoint aPoint)
+		{
+			if (!DisableSetOrigin)
+				base.SetFrameOrigin(aPoint);
+		}
+
 		public override void RecalculateKeyViewLoop()
 		{
 			base.RecalculateKeyViewLoop();
@@ -141,9 +149,9 @@ namespace Eto.Mac.Forms
 	}
 
 	public abstract class MacWindow<TControl, TWidget, TCallback> : MacPanel<TControl, TWidget, TCallback>, Window.IHandler, IMacWindow
-		where TControl: NSWindow
-		where TWidget: Window
-		where TCallback: Window.ICallback
+		where TControl : NSWindow
+		where TWidget : Window
+		where TCallback : Window.ICallback
 	{
 		MacFieldEditor fieldEditor;
 		MenuBar menuBar;
@@ -172,6 +180,15 @@ namespace Eto.Mac.Forms
 		public NSObject FieldEditorClient { get; set; }
 
 		public MacFieldEditor FieldEditor => fieldEditor;
+
+		/// <summary>
+		/// Allow moving the window by dragging the background, null to only enable it in certain cases (e.g. when borderless)
+		/// </summary>
+		public bool MovableByWindowBackground
+		{
+			get => Control.MovableByWindowBackground;
+			set => Control.MovableByWindowBackground = value;
+		}
 
 		protected override SizeF GetNaturalSize(SizeF availableSize)
 		{
@@ -231,19 +248,19 @@ namespace Eto.Mac.Forms
 
 		static void HandleDidBecomeKey(object sender, EventArgs e)
 		{
-			var handler = GetHandler(sender) as MacWindow<TControl,TWidget,TCallback>;
+			var handler = GetHandler(sender) as MacWindow<TControl, TWidget, TCallback>;
 			handler?.SetMenu();
 		}
 
 		static void HandleDidResignKey(object sender, EventArgs e)
 		{
-			var handler = GetHandler(sender) as MacWindow<TControl,TWidget,TCallback>;
+			var handler = GetHandler(sender) as MacWindow<TControl, TWidget, TCallback>;
 			handler?.RestoreMenu();
 		}
 
 		static bool HandleShouldZoom(NSWindow window, CGRect newFrame)
 		{
-			var handler = GetHandler(window) as MacWindow<TControl,TWidget,TCallback>;
+			var handler = GetHandler(window) as MacWindow<TControl, TWidget, TCallback>;
 			if (handler == null)
 				return true;
 			if (!handler.Maximizable)
@@ -258,7 +275,7 @@ namespace Eto.Mac.Forms
 
 		static void HandleWillMiniaturize(object sender, EventArgs e)
 		{
-			var handler = GetHandler(sender) as MacWindow<TControl,TWidget,TCallback>;
+			var handler = GetHandler(sender) as MacWindow<TControl, TWidget, TCallback>;
 			if (handler == null)
 				return;
 			handler.RestoreBounds = handler.Widget.Bounds;
@@ -266,7 +283,7 @@ namespace Eto.Mac.Forms
 
 		static void HandleWillClose(object sender, EventArgs e)
 		{
-			var handler = GetHandler(sender) as MacWindow<TControl,TWidget,TCallback>;
+			var handler = GetHandler(sender) as MacWindow<TControl, TWidget, TCallback>;
 			if (handler == null || !handler.Widget.Loaded) // could already be closed
 				return;
 			if (ApplicationHandler.Instance.ShouldCloseForm(handler.Widget, true))
@@ -275,7 +292,7 @@ namespace Eto.Mac.Forms
 
 		static bool HandleWindowShouldClose(NSObject sender)
 		{
-			var handler = GetHandler(sender) as MacWindow<TControl,TWidget,TCallback>;
+			var handler = GetHandler(sender) as MacWindow<TControl, TWidget, TCallback>;
 			if (handler == null)
 				return true;
 			var args = new CancelEventArgs();
@@ -286,7 +303,7 @@ namespace Eto.Mac.Forms
 
 		static void HandleWindowStateChanged(object sender, EventArgs e)
 		{
-			var handler = GetHandler(sender) as MacWindow<TControl,TWidget,TCallback>;
+			var handler = GetHandler(sender) as MacWindow<TControl, TWidget, TCallback>;
 			if (handler == null)
 				return;
 			handler.Callback.OnWindowStateChanged(handler.Widget, EventArgs.Empty);
@@ -294,7 +311,7 @@ namespace Eto.Mac.Forms
 
 		static void HandleGotFocus(object sender, EventArgs e)
 		{
-			var handler = GetHandler(sender) as MacWindow<TControl,TWidget,TCallback>;
+			var handler = GetHandler(sender) as MacWindow<TControl, TWidget, TCallback>;
 			if (handler == null)
 				return;
 			handler.Callback.OnGotFocus(handler.Widget, EventArgs.Empty);
@@ -302,7 +319,7 @@ namespace Eto.Mac.Forms
 
 		static void HandleLostFocus(object sender, EventArgs e)
 		{
-			var handler = GetHandler(sender) as MacWindow<TControl,TWidget,TCallback>;
+			var handler = GetHandler(sender) as MacWindow<TControl, TWidget, TCallback>;
 			if (handler == null)
 				return;
 			handler.Callback.OnLostFocus(handler.Widget, EventArgs.Empty);
@@ -327,7 +344,7 @@ namespace Eto.Mac.Forms
 					Control.DidDeminiaturize += HandleWindowStateChanged;
 					break;
 				case Eto.Forms.Control.ShownEvent:
-				// handled when shown
+					// handled when shown
 					break;
 				case Eto.Forms.Control.GotFocusEvent:
 					Control.DidBecomeKey += HandleGotFocus;
@@ -340,7 +357,7 @@ namespace Eto.Mac.Forms
 						Size? oldSize = null;
 						AddObserver(NSWindow.DidResizeNotification, e =>
 						{
-							var handler = (MacWindow<TControl,TWidget,TCallback>)e.Handler;
+							var handler = (MacWindow<TControl, TWidget, TCallback>)e.Handler;
 							var newSize = handler.Size;
 							if (oldSize != newSize)
 							{
@@ -354,7 +371,7 @@ namespace Eto.Mac.Forms
 					{
 						AddObserver(NSWindow.DidMoveNotification, e =>
 						{
-							var handler = e.Handler as MacWindow<TControl,TWidget,TCallback>;
+							var handler = e.Handler as MacWindow<TControl, TWidget, TCallback>;
 							if (handler != null)
 							{
 								var old = handler.oldLocation;
@@ -405,7 +422,7 @@ namespace Eto.Mac.Forms
 		/// </summary>
 		static void HandleWillMove(object sender, EventArgs e)
 		{
-			var handler = GetHandler(sender) as MacWindow<TControl,TWidget,TCallback>;
+			var handler = GetHandler(sender) as MacWindow<TControl, TWidget, TCallback>;
 			if (handler == null)
 				return;
 			handler.oldLocation = null;
@@ -479,8 +496,8 @@ namespace Eto.Mac.Forms
 
 		public override NSView ContentControl => Control.ContentView;
 
-		public virtual string Title { get { return Control.Title; } set { Control.Title = value ?? ""; } }
-		// Control.Title throws an exception if value is null
+		public virtual string Title { get => Control.Title; set => Control.Title = value ?? ""; }
+
 		void SetButtonStates()
 		{
 			var button = Control.StandardWindowButton(NSWindowButton.ZoomButton);
@@ -557,7 +574,7 @@ namespace Eto.Mac.Forms
 			get
 			{
 				if (!Widget.Loaded)
-					return PreferredSize ?? new Size(-1, -1);
+					return UserPreferredSize;
 				return Control.Frame.Size.ToEtoSize();
 			}
 			set
@@ -566,16 +583,15 @@ namespace Eto.Mac.Forms
 				var newFrame = oldFrame.SetSize(value);
 				newFrame.Y = (nfloat)Math.Max(0, oldFrame.Y - (value.Height - oldFrame.Height));
 				Control.SetFrame(newFrame, true);
-				PreferredSize = value;
+				UserPreferredSize = value;
 				SetAutoSize();
 			}
 		}
 
-		void SetAutoSize()
+
+		protected override void SetAutoSize()
 		{
-			AutoSize = true;
-			if (PreferredSize != null)
-				AutoSize &= PreferredSize.Value.Width == -1 || PreferredSize.Value.Height == -1;
+			base.SetAutoSize();
 			if (PreferredClientSize != null)
 				AutoSize &= PreferredClientSize.Value.Width == -1 || PreferredClientSize.Value.Height == -1;
 		}
@@ -632,35 +648,35 @@ namespace Eto.Mac.Forms
 			}
 		}
 
-        /// <summary>
-        /// Removes the Close All menu item for document-based apps
-        /// </summary>
-        /// <remarks>
-        /// macOS automatically re-adds this back for document based apps, but not for SaveAs/Duplicate
-        /// Appears to be a bug (feature) of macOS.
-        /// </remarks>
-        void RemoveSuperfluousCloseAll()
-        {
+		/// <summary>
+		/// Removes the Close All menu item for document-based apps
+		/// </summary>
+		/// <remarks>
+		/// macOS automatically re-adds this back for document based apps, but not for SaveAs/Duplicate
+		/// Appears to be a bug (feature) of macOS.
+		/// </remarks>
+		void RemoveSuperfluousCloseAll()
+		{
 			var menu = NSApplication.SharedApplication.MainMenu;
 			if (menu == null)
-                return;
-            for (int j = 0; j < menu.Count; j++)
-            {
-                var item = menu.ItemAt(j);
-                if (!item.HasSubmenu)
-                    continue;
-                var submenu = item.Submenu;
-                for (int i = 0; i < submenu.Count; i++)
-                {
-                    var submenuItem = submenu.ItemAt(i);
-                    if (submenuItem.Title == "<<Close All - unlocalized>>" && submenuItem.Action?.Name == "closeAll:")
-                    {
-                        submenu.RemoveItemAt(i);
-                        return;
-                    }
-                }
-            }
-        }
+				return;
+			for (int j = 0; j < menu.Count; j++)
+			{
+				var item = menu.ItemAt(j);
+				if (!item.HasSubmenu)
+					continue;
+				var submenu = item.Submenu;
+				for (int i = 0; i < submenu.Count; i++)
+				{
+					var submenuItem = submenu.ItemAt(i);
+					if (submenuItem.Title == "<<Close All - unlocalized>>" && submenuItem.Action?.Name == "closeAll:")
+					{
+						submenu.RemoveItemAt(i);
+						return;
+					}
+				}
+			}
+		}
 
 		public bool CloseWindow(Action<CancelEventArgs> closing = null)
 		{
@@ -726,7 +742,7 @@ namespace Eto.Mac.Forms
 		{
 			get { return Control.ContentView.Frame.Size.ToEtoSize(); }
 			set
-			{ 
+			{
 				var oldFrame = Control.Frame;
 				var oldSize = Control.ContentView.Frame;
 				Control.SetFrameOrigin(new CGPoint(oldFrame.X, (nfloat)Math.Max(0, oldFrame.Y - (value.Height - oldSize.Height))));
@@ -734,16 +750,12 @@ namespace Eto.Mac.Forms
 				if (!Widget.Loaded)
 				{
 					PreferredClientSize = value;
-					if (PreferredSize != null)
-					{
-						if (value.Width != -1 && value.Height != -1)
-							PreferredSize = null;
-						else if (value.Width != -1)
-							PreferredSize = new Size(-1, PreferredSize.Value.Height);
-						else if (value.Height != -1)
-							PreferredSize = new Size(PreferredSize.Value.Width, -1);
-
-					}
+					if (value.Width != -1 && value.Height != -1)
+						UserPreferredSize = new Size(-1, -1);
+					else if (value.Width != -1)
+						UserPreferredSize = new Size(-1, UserPreferredSize.Height);
+					else if (value.Height != -1)
+						UserPreferredSize = new Size(UserPreferredSize.Width, -1);
 				}
 				SetAutoSize();
 			}
@@ -806,16 +818,14 @@ namespace Eto.Mac.Forms
 			// location is relative to the main screen, translate to bottom left, inversed
 			var mainFrame = NSScreen.Screens[0].Frame;
 			var frame = Control.Frame;
-			var point = new CGPoint((nfloat)value.X, (nfloat)(mainFrame.Height - value.Y - frame.Height));
-			Control.SetFrameOrigin(point);
+			var point = new CGPoint((nfloat)value.X, (nfloat)(mainFrame.Height - value.Y));
 			if (Control.Screen == null)
 			{
 				// ensure that the control lands on a screen
 				point.X = (nfloat)Math.Min(Math.Max(mainFrame.X, point.X), mainFrame.Right - frame.Width);
 				point.Y = (nfloat)Math.Min(Math.Max(mainFrame.Y, point.Y), mainFrame.Bottom - frame.Height);
-
-				Control.SetFrameOrigin(point);
 			}
+			Control.SetFrameTopLeftPoint(point);
 		}
 
 		public WindowState WindowState
@@ -839,7 +849,7 @@ namespace Eto.Mac.Forms
 				}
 				switch (value)
 				{
-					case WindowState.Maximized: 
+					case WindowState.Maximized:
 						if (Control.IsMiniaturized)
 							Control.Deminiaturize(Control);
 						if (!Control.IsZoomed)
@@ -849,7 +859,7 @@ namespace Eto.Mac.Forms
 						if (!Control.IsMiniaturized)
 							Control.Miniaturize(Control);
 						break;
-					case WindowState.Normal: 
+					case WindowState.Normal:
 						if (Control.IsZoomed)
 							Control.Zoom(Control);
 						if (Control.IsMiniaturized)
@@ -871,7 +881,7 @@ namespace Eto.Mac.Forms
 			set
 			{
 				Control.IsOpaque = Math.Abs(value - 1.0) < 0.01f;
-				Control.AlphaValue = (float)value; 
+				Control.AlphaValue = (float)value;
 			}
 		}
 
@@ -881,18 +891,14 @@ namespace Eto.Mac.Forms
 			{
 				AutoSize = false;
 				var availableSize = SizeF.PositiveInfinity;
-				if (PreferredSize != null)
-				{
-					var borderSize = GetBorderSize();
-					if (PreferredSize.Value.Width != -1)
-						availableSize.Width = PreferredSize.Value.Width - borderSize.Width;
-					if (PreferredSize.Value.Height != -1)
-						availableSize.Height = PreferredSize.Value.Height - borderSize.Height;
-				}
+				var borderSize = GetBorderSize();
+				if (UserPreferredSize.Width != -1)
+					availableSize.Width = UserPreferredSize.Width - borderSize.Width;
+				if (UserPreferredSize.Height != -1)
+					availableSize.Height = UserPreferredSize.Height - borderSize.Height;
 				var size = GetPreferredSize(availableSize);
 				SetContentSize(size.ToNS());
 				setInitialSize = true;
-
 			}
 			PositionWindow();
 			base.OnLoad(e);
@@ -929,7 +935,8 @@ namespace Eto.Mac.Forms
 				SetLocation(InitialLocation.Value);
 				InitialLocation = null;
 			}
-			Control.Center();
+			else
+				Control.Center();
 		}
 
 		#region IMacContainer implementation
@@ -941,7 +948,7 @@ namespace Eto.Mac.Forms
 				contentSize.Width = (nfloat)Math.Max(contentSize.Width, MinimumSize.Width);
 				contentSize.Height = (nfloat)Math.Max(contentSize.Height, MinimumSize.Height);
 			}
-			
+
 			if (Widget.Loaded)
 			{
 				var diffy = ClientSize.Height - (int)contentSize.Height;
@@ -984,7 +991,14 @@ namespace Eto.Mac.Forms
 
 		#endregion
 
-		public Screen Screen => new Screen(new ScreenHandler(Control.Screen));
+		public Screen Screen
+		{
+			get
+			{
+				var screen = Control.Screen;
+				return screen != null ? new Screen(new ScreenHandler(screen)) : null;
+			}
+		}
 
 		public override PointF PointFromScreen(PointF point)
 		{
@@ -1009,7 +1023,9 @@ namespace Eto.Mac.Forms
 			{
 				if (Control.RespondsToSelector(MacWindow.selSetStyleMask))
 				{
-					Control.StyleMask = value.ToNS(Control.StyleMask);
+					var newStyleMask = value.ToNS(Control.StyleMask);
+					Control.StyleMask = 0; // reset titled
+					Control.StyleMask = newStyleMask;
 
 					// don't use animation when there's no border.
 					if (value == WindowStyle.None && Control.AnimationBehavior == NSWindowAnimationBehavior.Default)

@@ -56,6 +56,7 @@ namespace Eto.WinForms
 			p.Add<LinearGradientBrush.IHandler>(() => new LinearGradientBrushHandler());
 			p.Add<RadialGradientBrush.IHandler>(() => new RadialGradientBrushHandler());
 			p.Add<SystemColors.IHandler>(() => new SystemColorsHandler());
+			p.Add<FormattedText.IHandler>(() => new FormattedTextHandler());
 
 			// Forms.Cells
 			p.Add<CheckBoxCell.IHandler>(() => new CheckBoxCellHandler());
@@ -164,6 +165,7 @@ namespace Eto.WinForms
 			p.Add<TrayIndicator.IHandler>(() => new TrayIndicatorHandler());
 			p.Add<Notification.IHandler>(() => new NotificationHandler());
 			p.Add<DataObject.IHandler>(() => new DataObjectHandler());
+			p.Add<Taskbar.IHandler>(() => new TaskbarHandler());
 
 			// IO
 			p.Add<SystemIcons.IHandler>(() => new SystemIconsHandler());

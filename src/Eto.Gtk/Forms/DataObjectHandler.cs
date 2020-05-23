@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Eto.Drawing;
@@ -10,6 +10,15 @@ using System.Threading;
 
 namespace Eto.GtkSharp.Forms
 {
+	public class DataFormatsHandler : DataFormats.IHandler
+	{
+		public string Text => "UTF8_STRING";
+
+		public string Html => "text/html";
+
+		public string Color => "color";
+	}
+
 	public class DataObjectData
 	{
 		Gdk.Atom _atom;
@@ -32,6 +41,8 @@ namespace Eto.GtkSharp.Forms
 		Gtk.Widget _sourceWidget;
 		uint _dragTime;
 		Action<Gtk.SelectionData> _getData;
+
+		public Gdk.DragContext DragContext => _dragContext;
 
 		public DataObjectHandler()
 		{
@@ -231,6 +242,18 @@ namespace Eto.GtkSharp.Forms
 			return _dragContext?.ListTargets().Any(r => types.Contains(r.Name))
 				?? Control.Keys.Any(r => types.Contains(r));
 		}
+
+		public bool TrySetObject(object value, string type) => false;
+
+		public bool TryGetObject(string type, out object value)
+		{
+			value = null;
+			return false;
+		}
+
+		public void SetObject(object value, string type) => Widget.SetObject(value, type);
+
+		public T GetObject<T>(string type) => Widget.GetObject<T>(type);
 
 		public string[] Types
 		{
